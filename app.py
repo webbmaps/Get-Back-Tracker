@@ -2,53 +2,10 @@
  "cells": [
   {
    "cell_type": "code",
-   "execution_count": 1,
-   "id": "1b9df9fa-6a57-4311-b4ca-8807a333b42d",
+   "execution_count": none,
+   "id": "648211fa-b9ba-4e68-b866-3b535fb3752b",
    "metadata": {},
-   "outputs": [
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "2025-05-10 18:01:46.903 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:46.904 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:47.349 \n",
-      "  \u001b[33m\u001b[1mWarning:\u001b[0m to view this Streamlit app on a browser, run it with the following\n",
-      "  command:\n",
-      "\n",
-      "    streamlit run C:\\Users\\User\\Desktop\\Python\\Lib\\site-packages\\ipykernel_launcher.py [ARGUMENTS]\n",
-      "2025-05-10 18:01:47.350 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:47.351 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:47.351 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:47.353 No runtime found, using MemoryCacheStorageManager\n",
-      "2025-05-10 18:01:47.354 No runtime found, using MemoryCacheStorageManager\n",
-      "2025-05-10 18:01:47.355 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:47.356 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:47.357 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:47.854 Thread 'Thread-3': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:01:47.856 Thread 'Thread-3': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.057 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.059 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.169 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.315 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.315 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.316 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.317 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.319 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-      "2025-05-10 18:02:01.320 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n"
-     ]
-    },
-    {
-     "data": {
-      "text/plain": [
-       "DeltaGenerator(_root_container=1, _parent=DeltaGenerator())"
-      ]
-     },
-     "execution_count": 1,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
+   "outputs": [],
    "source": [
     "import streamlit as st\n",
     "import leafmap.foliumap as leafmap\n",
@@ -181,14 +138,6 @@
     "- Distance measurement\n",
     "\"\"\")"
    ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": None,
-   "id": "f2338352-ad7c-4253-8fd0-d31b17d85794",
-   "metadata": {},
-   "outputs": [],
-   "source": []
   }
  ],
  "metadata": {
