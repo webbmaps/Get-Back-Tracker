@@ -1,164 +1,152 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": none,
-   "id": "648211fa-b9ba-4e68-b866-3b535fb3752b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import streamlit as st\n",
-    "import leafmap.foliumap as leafmap\n",
-    "import geopandas as gpd\n",
-    "import networkx as nx\n",
-    "from shapely.geometry import Point, LineString\n",
-    "import math\n",
-    "\n",
-    "# Set page config\n",
-    "st.set_page_config(layout=\"wide\")\n",
-    "\n",
-    "# Title\n",
-    "st.title(\"🚶 Hiking Trail Navigator\")\n",
-    "st.markdown(\"\"\"\n",
-    "1. Allow location access to see your current position\n",
-    "2. Click anywhere on the map to set your destination\n",
-    "3. The app will calculate the shortest trail route\n",
-    "\"\"\")\n",
-    "\n",
-    "# Load trail data\n",
-    "@st.cache_data\n",
-    "def load_data():\n",
-    "    trails_url = 'https://raw.githubusercontent.com/webbmaps/Get-Back-Tracker/main/trails.geojson'\n",
-    "    lusk_url = 'https://raw.githubusercontent.com/webbmaps/Get-Back-Tracker/main/lusk.geojson'\n",
-    "    \n",
-    "    trail_gdf = gpd.read_file(trails_url)\n",
-    "    wilderness_gdf = gpd.read_file(lusk_url)\n",
-    "    \n",
-    "    # Build graph from trail lines\n",
-    "    G = nx.Graph()\n",
-    "    for _, row in trail_gdf.iterrows():\n",
-    "        coords = list(row.geometry.coords)\n",
-    "        for i in range(len(coords) - 1):\n",
-    "            a, b = coords[i], coords[i+1]\n",
-    "            dist = math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)\n",
-    "            G.add_edge(a, b, weight=dist)\n",
-    "    \n",
-    "    return G, trail_gdf, wilderness_gdf\n",
-    "\n",
-    "G, trails, wilderness = load_data()\n",
-    "\n",
-    "# Initialize map\n",
-    "m = leafmap.Map(\n",
-    "    draw_control=False,\n",
-    "    scale_control=True,\n",
-    "    layer_control=True,\n",
-    "    attribution_control=True,\n",
-    "    center=[37.5, -88.7],\n",
-    "    zoom=13\n",
-    ")\n",
-    "\n",
-    "# Add layers\n",
-    "m.add_geojson(\n",
-    "    wilderness.to_json(),\n",
-    "    style={'color': 'grey', 'weight': 2, 'fillColor': 'transparent'},\n",
-    "    layer_name='Wilderness Area'\n",
-    ")\n",
-    "\n",
-    "m.add_geojson(\n",
-    "    trails.to_json(),\n",
-    "    style={'color': 'brown', 'weight': 3},\n",
-    "    layer_name='Trails'\n",
-    ")\n",
-    "\n",
-    "m.add_basemap('Esri.WorldImagery')\n",
-    "\n",
-    "# Add locate control to find user position\n",
-    "m.add_child(leafmap.plugins.LocateControl(auto_start=False))\n",
-    "\n",
-    "# Display map and capture clicks\n",
-    "map_data = m.to_streamlit(height=600, bidirectional=True)\n",
-    "\n",
-    "# Process user location and clicks\n",
-    "if map_data.get('last_clicked'):\n",
-    "    dest_point = Point(map_data['last_clicked']['lng'], map_data['last_clicked']['lat'])\n",
-    "    \n",
-    "    # Get user location (from browser or default)\n",
-    "    user_lat = map_data.get('last_position', {}).get('lat', 37.49)\n",
-    "    user_lon = map_data.get('last_position', {}).get('lng', -88.72)\n",
-    "    user_point = Point(user_lon, user_lat)\n",
-    "    \n",
-    "    # Find nearest nodes on trail network\n",
-    "    start_node = min(G.nodes, key=lambda n: Point(n).distance(user_point))\n",
-    "    end_node = min(G.nodes, key=lambda n: Point(n).distance(dest_point))\n",
-    "    \n",
-    "    try:\n",
-    "        # Calculate shortest path\n",
-    "        path = nx.shortest_path(G, source=start_node, target=end_node, weight='weight')\n",
-    "        \n",
-    "        # Create a line for the path\n",
-    "        route_line = LineString(path)\n",
-    "        \n",
-    "        # Add to map\n",
-    "        m.add_gdf(\n",
-    "            gpd.GeoDataFrame(geometry=[route_line], crs='EPSG:4326'),\n",
-    "            style={'color': 'red', 'weight': 5},\n",
-    "            layer_name='Route'\n",
-    "        )\n",
-    "        \n",
-    "        # Add markers\n",
-    "        m.add_marker(location=[user_lat, user_lon], tooltip=\"You\")\n",
-    "        m.add_marker(location=[dest_point.y, dest_point.x], tooltip=\"Destination\")\n",
-    "        \n",
-    "        # Calculate distance\n",
-    "        distance = sum(math.sqrt((path[i][0]-path[i+1][0])**2 + (path[i][1]-path[i+1][1])**2) \n",
-    "                  for i in range(len(path)-1))\n",
-    "        distance_miles = distance * 69  # approximate conversion to miles\n",
-    "        \n",
-    "        st.success(f\"Found route! Distance: {distance_miles:.2f} miles\")\n",
-    "        \n",
-    "        # Redisplay map with route\n",
-    "        m.to_streamlit(height=600)\n",
-    "        \n",
-    "    except nx.NetworkXNoPath:\n",
-    "        st.error(\"No trail route found between these points\")\n",
-    "    except Exception as e:\n",
-    "        st.error(f\"Error calculating route: {str(e)}\")\n",
-    "\n",
-    "# Instructions\n",
-    "st.sidebar.markdown(\"\"\"\n",
-    "### How to Use:\n",
-    "1. Click the location icon (top right) to set your current position\n",
-    "2. Click anywhere on the map to set your destination\n",
-    "3. The app will calculate the shortest trail route\n",
-    "\n",
-    "### Features:\n",
-    "- Real-time location tracking\n",
-    "- Trail network analysis\n",
-    "- Shortest path calculation\n",
-    "- Distance measurement\n",
-    "\"\"\")"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.13.3"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+import streamlit as st
+from streamlit_folium import st_folium
+import folium
+import geopandas as gpd
+import networkx as nx
+from shapely.geometry import Point, LineString
+import math
+import json
+
+# Set page config (must be first Streamlit command)
+st.set_page_config(layout="wide")
+
+# Title and instructions
+st.title("The Get-Back_inator")
+st.write("""
+1. Allow location access to see your position
+2. Click anywhere to set destination
+3. Route will appear in red
+""")
+
+@st.cache_data
+def load_data():
+    trails_url = 'https://raw.githubusercontent.com/webbmaps/Get-Back-Tracker/main/trails.geojson'
+    lusk_url = 'https://raw.githubusercontent.com/webbmaps/Get-Back-Tracker/main/lusk.geojson'
+    
+    trail_gdf = gpd.read_file(trails_url)
+    wilderness_gdf = gpd.read_file(lusk_url)
+    
+    # Build graph from trail lines
+    G = nx.Graph()
+    for _, row in trail_gdf.iterrows():
+        coords = list(row.geometry.coords)
+        for i in range(len(coords) - 1):
+            a, b = coords[i], coords[i+1]
+            dist = math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
+            G.add_edge(a, b, weight=dist)
+    
+    return G, trail_gdf, wilderness_gdf
+
+G, trails, wilderness = load_data()
+
+# Initialize map
+m = folium.Map(
+    location=[37.5, -88.7],
+    zoom_start=13,
+    tiles="Esri.WorldImagery"
+)
+
+# Add GeoJSON layers
+folium.GeoJson(
+    wilderness,
+    name="Wilderness Area",
+    style_function=lambda x: {
+        'color': 'gray',
+        'weight': 2,
+        'fillOpacity': 0
+    }
+).add_to(m)
+
+folium.GeoJson(
+    trails,
+    name="Trails",
+    style_function=lambda x: {
+        'color': 'brown',
+        'weight': 3
+    }
+).add_to(m)
+
+# Add layer control
+folium.LayerControl().add_to(m)
+
+# Add locate control
+folium.plugins.LocateControl(
+    auto_start=False,
+    strings={"title": "Show my location"}
+).add_to(m)
+
+# Display map and capture interactions
+map_data = st_folium(
+    m,
+    height=700,
+    width=None,
+    returned_objects=["last_clicked", "last_position"]
+)
+
+# Process interactions
+if map_data and map_data.get("last_clicked"):
+    dest_point = Point(map_data["last_clicked"]["lng"], map_data["last_clicked"]["lat"])
+    
+    # Get user location
+    user_lat = map_data.get("last_position", {}).get("lat", 37.49)
+    user_lon = map_data.get("last_position", {}).get("lng", -88.72)
+    user_point = Point(user_lon, user_lat)
+    
+    # Find nearest nodes
+    start_node = min(G.nodes, key=lambda n: Point(n).distance(user_point))
+    end_node = min(G.nodes, key=lambda n: Point(n).distance(dest_point))
+    
+    try:
+        # Calculate shortest path
+        path = nx.shortest_path(G, source=start_node, target=end_node, weight="weight")
+        
+        # Create new map with route
+        m2 = folium.Map(
+            location=[user_lat, user_lon],
+            zoom_start=14,
+            tiles="Esri.WorldImagery"
+        )
+        
+        # Add layers again
+        folium.GeoJson(wilderness, name="Wilderness", style_function=lambda x: {
+            'color': 'gray', 'weight': 2, 'fillOpacity': 0
+        }).add_to(m2)
+        
+        folium.GeoJson(trails, name="Trails", style_function=lambda x: {
+            'color': 'brown', 'weight': 3
+        }).add_to(m2)
+        
+        # Add route
+        folium.PolyLine(
+            locations=[(lat, lon) for lon, lat in path],
+            color="red",
+            weight=5
+        ).add_to(m2)
+        
+        # Add markers
+        folium.Marker(
+            location=[user_lat, user_lon],
+            tooltip="You",
+            icon=folium.Icon(color="green")
+        ).add_to(m2)
+        
+        folium.Marker(
+            location=[dest_point.y, dest_point.x],
+            tooltip="Destination",
+            icon=folium.Icon(color="red")
+        ).add_to(m2)
+        
+        # Add controls
+        folium.LayerControl().add_to(m2)
+        folium.plugins.LocateControl().add_to(m2)
+        
+        # Calculate distance
+        distance = sum(math.sqrt((path[i][0]-path[i+1][0])**2 + (path[i][1]-path[i+1][1])**2) 
+                  for i in range(len(path)-1))
+        st.success(f"Route distance: {distance * 69:.2f} miles")
+        
+        # Display new map
+        st_folium(m2, height=700)
+        
+    except nx.NetworkXNoPath:
+        st.error("No trail route found between these points")
